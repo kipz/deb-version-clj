@@ -6,8 +6,7 @@ Parse debian-version scheme as per https://www.man7.org/linux/man-pages/man7/deb
 
 Thanks to https://github.com/knqyf263/go-deb-version from which I've pulled some test-cases.
 
-[![codecov](https://codecov.io/gh/kipz/deb-version-clj/branch/master/graph/badge.svg)](https://codecov.io/gh/kipz/deb-version-clj)
-[![Clojars Project](https://img.shields.io/clojars/v/deb-version-clj.svg)](https://clojars.org/deb-version-clj)
+[![Clojars Project](https://img.shields.io/clojars/v/org.kipz/deb-version-clj.svg)](https://clojars.org/org.kipz/deb-version-clj)
 
 
 ```clj
