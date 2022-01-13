@@ -11,7 +11,7 @@ Thanks to https://github.com/knqyf263/go-deb-version from which I've pulled some
 
 
 ```clj
-[org.kipz/deb-version-clj "0.1-SNAPSHOT"]
+[org.kipz/deb-version-clj "<some version>"]
 ```
 ## Usage
 
