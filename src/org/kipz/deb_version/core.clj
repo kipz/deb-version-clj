@@ -1,4 +1,5 @@
-(ns org.kipz.deb-version.core)
+(ns org.kipz.deb-version.core
+  (:require [clojure.string :as str]))
 
 ; https://www.man7.org/linux/man-pages/man7/deb-version.7.html
 
@@ -114,3 +115,57 @@
           (compare-version v1-debian v2-debian))
          less?)
        (< (Integer/parseInt epoch1) (Integer/parseInt epoch2))))))
+
+(def ^:private range-operators #"(\>=|\<=|\<|\>|=)")
+
+(defn- split-ranges
+  "Pre-clean ranges for easier version matching"
+  [range-str]
+  (str/split
+   (str/replace
+    (str/trim
+     (str/replace
+      range-str
+      #"[\<\>=,&]"
+      " "))
+    #"\s+"
+    " ")
+   #" "))
+
+
+(defn- compare-to-range-deb
+  [version operator range]
+  (boolean
+   (cond
+     (= "=" operator)
+     (= version range)
+
+     (= "<" operator)
+     (compare-versions version range)
+
+     (= ">" operator)
+     (compare-versions range version)
+
+     (= "<=" operator)
+     (or (= version range)
+         (compare-versions version range))
+
+     (= ">=" operator)
+     (or (= version range)
+         (compare-versions range version)))))
+
+(defn in-range?
+  "Is version in range string (e.g. < 12.23 & > 14.1~foo)"
+  [version range]
+  (boolean
+   (when (and
+          (string? version)
+          (string? range))
+     (let [[range-version1 range-version2] (split-ranges range)
+           [operator1 operator2] (map second (re-seq range-operators range))]
+       (when (and range-version1 range-version1)
+         (and
+          (compare-to-range-deb version operator1 range-version1)
+          (or
+           (not (and range-version2 operator2))
+           (compare-to-range-deb version operator2 range-version2))))))))

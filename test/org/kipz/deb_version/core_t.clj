@@ -1,6 +1,8 @@
 (ns org.kipz.deb-version.core-t
   (:require [clojure.test :refer [deftest is testing]]
-            [org.kipz.deb-version.core :refer [parse-version compare-versions] :as deb]))
+            [org.kipz.deb-version.core :refer [parse-version
+                                               compare-versions
+                                               in-range?] :as deb]))
 
 (deftest version-parsing
   (testing "versions must start with a digit"
@@ -114,3 +116,19 @@
 
     (is  (not (compare-versions "2:7.4.052-1ubuntu3.2" "2:7.4.052-1ubuntu3.1")))
     (is  (compare-versions "2:7.4.052-1ubuntu3.1" "2:7.4.052-1ubuntu3.2"))))
+
+(deftest range-matching
+  (testing "can match single ranges"
+    (is (not (in-range? "7.4.052" "1:7.4.052")))
+    (is (in-range? "7.4.052" "< 1:7.4.052"))
+    (is (not (in-range? "7.4.052" "> 1:7.4.052")))
+    (is (in-range? "2:7.4.052" "> 1:7.4.052"))
+    (is (in-range? "2:7.4.052" ">= 2:7.4.052"))
+    (is (in-range? "2:7.4.052" "<= 2:7.4.052"))
+    (is (in-range? "2:7.4.052" "= 2:7.4.052"))
+    (is (not (in-range? "2:7.4.052" "= 1:7.4.052"))))
+  (testing "can match double ranges"
+    (is (in-range? "7.4.052" "< 1:7.4.052 & > 1.2.3"))
+    (is (not (in-range? "7.4.052" "< 1:7.4.052 < 1.2.3")))
+    (is (not (in-range? "7.4.052" "< 1.2.3 < 1:7.4.052")))
+    (is (in-range? "7.4.052" "> 1.2.3 < 1:7.4.052"))))
