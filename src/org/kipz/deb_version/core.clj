@@ -114,7 +114,8 @@
           (and v2-debian (not v1-debian))
           (compare-version v1-debian v2-debian))
          less?)
-       (< (Integer/parseInt epoch1) (Integer/parseInt epoch2))))))
+       (when (and epoch1 epoch2)
+         (< (Integer/parseInt epoch1) (Integer/parseInt epoch2)))))))
 
 (def ^:private range-operators #"(\>=|\<=|\<|\>|=)")
 
