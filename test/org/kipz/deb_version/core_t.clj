@@ -39,21 +39,22 @@
     (is (= nil (parse-version "7.4.052-!1ubuntu3.1")))))
 
 (deftest version-fragment-comparison
-  (is (#'deb/compare-strings "~~" "~~a"))
-  (is (not (#'deb/compare-strings "a" "~")))
-  (is  (#'deb/compare-strings "~" "a"))
-  (is (not (#'deb/compare-strings "~~a" "~~")))
-  (is (#'deb/compare-strings "~~a" "~"))
-  (is (not (#'deb/compare-strings "~" "~~a")))
-  (is (#'deb/compare-strings "~" ""))
-  (is (not (#'deb/compare-strings "" "~")))
-  (is (#'deb/compare-strings "" "a"))
-  (is (not (#'deb/compare-strings "a" "")))
-  (is (#'deb/compare-strings "a" "."))
-  (is (not (#'deb/compare-strings "." "a")))
+  (is (= -1 (#'deb/compare-strings "~~" "~~a")))
+  (is (= 1 (#'deb/compare-strings "a" "~")))
+  (is (= -1 (#'deb/compare-strings "~" "a")))
+  (is (= 1 (#'deb/compare-strings "~~a" "~~")))
+  (is (= -1 (#'deb/compare-strings "~~a" "~")))
+  (is (= 1 (#'deb/compare-strings "~" "~~a")))
+  (is (= -1 (#'deb/compare-strings "~" "")))
+  (is (= 1 (#'deb/compare-strings "" "~")))
+  (is (= -1 (#'deb/compare-strings "" "a")))
+  (is (= 1 (#'deb/compare-strings "a" "")))
+  (is (= -1 (#'deb/compare-strings "a" ".")))
+  (is (= 1 (#'deb/compare-strings "." "a")))
   ;‘ ~~’, ‘ ~~a’, ‘ ~’, the empty part, ‘a’.
-  (is (= ["~~" "~~a" "~" "" "a"  "."] (sort  #(#'deb/compare-strings %1 %2) ["~~" "a" "" "." "~" "~~a"])
-         (sort  #(#'deb/compare-strings %1 %2) ["~~a" "~~" "a" "" "." "~"]))))
+  (is (= ["~~" "~~a" "~" "" "a"  "."]
+         (sort #(#'deb/compare-strings %1 %2) ["~~" "a" "" "." "~" "~~a"])
+         (sort #(#'deb/compare-strings %1 %2) ["~~a" "~~" "a" "" "." "~"]))))
 
 (deftest version-comparison
   (is (compare-versions "6.4.052" "7.4.052"))
@@ -115,10 +116,21 @@
     (is  (compare-versions "7.4.052" "1:7.4.052"))
 
     (is  (not (compare-versions "2:7.4.052-1ubuntu3.2" "2:7.4.052-1ubuntu3.1")))
-    (is  (compare-versions "2:7.4.052-1ubuntu3.1" "2:7.4.052-1ubuntu3.2"))))
+    (is  (compare-versions "2:7.4.052-1ubuntu3.1" "2:7.4.052-1ubuntu3.2"))
+
+    (is (compare-versions "7.6.dbs-31" "7.6.q-12"))
+    (is (not (compare-versions "7.6.q-12" "7.6.dbs-31")))
+    (is (not (compare-versions "7.6.q-31" "7.6.dbs-12")))
+    (is (compare-versions "7.6.dbs-12" "7.6.q-31"))
+    (is (compare-versions "7.6.dbs-12" "7.6.ebs-12"))
+    (is (not (compare-versions "7.6.ebs-12" "7.6.dbs-12")))))
 
 (deftest range-matching
   (testing "can match single ranges"
+    (is (in-range? "0:1.2.3" "= 1.2.3"))
+    (is (not (in-range? "0:1.2.3" "< 1.2.3")))
+    (is (in-range? "0:1.2.3" "< 1.2.4"))
+    (is (not (in-range? "1:1.2.3" "< 1.2.4")))
     (is (not (in-range? "7.4.052" "1:7.4.052")))
     (is (in-range? "7.4.052" "< 1:7.4.052"))
     (is (not (in-range? "7.4.052" "> 1:7.4.052")))

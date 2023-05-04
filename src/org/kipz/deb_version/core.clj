@@ -19,49 +19,48 @@
   [version]
   (when (string? version)
     (not-empty
-     (rest (or  (re-matches epoch-upstream-re version)
-                (re-matches epoch-upstream-revision-re version)
-                (when-let [no-epoc (or (re-matches no-epoch-upstream-re version)
+     (rest (or (re-matches epoch-upstream-re version)
+               (re-matches epoch-upstream-revision-re version)
+               (when-let [no-epoch (or (re-matches no-epoch-upstream-re version)
                                        (re-matches no-epoch-upstream-revision-re version))]
                  ;; make it look like the others - default to 0 epoch
-                  (concat [(first no-epoc) "0"] (rest no-epoc))))))))
+                 (concat [(first no-epoch) "0"] (rest no-epoch))))))))
+
+(defn- is-letter?
+  [^Character c]
+  (boolean (some-> c Character/isLetter)))
 
 (defn- compare-chars
   [^Character x ^Character y]
-  (boolean
-   (or
-    ;; ~ before eveything
-    (and
-     (= \~ x)
-     (not= \~ y))
+  (cond
+    (= x y)
+    0
+    (= \~ x)
+    -1
+    (= \~ y)
+    1
+    (and (nil? x) (some? y))
+    -1
+    (and (some? x) (nil? y))
+    1
+    (and (is-letter? x) (is-letter? y))
+    (Character/compare x y)
+    (and (is-letter? x) (not (is-letter? y)))
+    -1
+    (and (not (is-letter? x)) (is-letter? y))
+    1
+    :else
+    (Character/compare x y)))
 
-    ;; empty before anything else
-    (and
-     (not x)
-     y
-     (not= y \~))
-
-    ;; normal letter order
-    (and x y
-         (Character/isLetter x)
-         (Character/isLetter y)
-         (neg? (Character/compare x y)))
-    ;; letters before non-letters
-    (and x y
-         (Character/isLetter x)
-         (not (= y \~))
-         (not (Character/isLetter y))))))
 (defn- compare-strings
   [^String sx ^String sy]
-  (boolean
-   (loop [sx sx sy sy]
-     (let [cx (first sx)
-           cy (first sy)]
-       (when (or cx cy)
-         (or
-          (compare-chars cx cy)
-          (and cx cy
-               (recur (rest sx) (rest sy)))))))))
+  (loop [sx sx sy sy]
+    (let [cx (first sx)
+          cy (first sy)
+          res (compare-chars cx cy)]
+      (if (zero? res)
+        (recur (rest sx) (rest sy))
+        res))))
 
 (defn- split-version
   [version-str]
@@ -95,25 +94,26 @@
                (and p1f p2f
                     (recur (rest v1s) (rest v2s))))
              (if (not= p1 p2)
-               (compare-strings p1 p2)
+               (neg? (compare-strings p1 p2))
                (and p1f p2f
                     (recur (rest v1s) (rest v2s)))))))))))
+
 (defn compare-versions
   "Compare to debian package version strings. Returns true if v1 is before/lower than v2"
   [v1 v2]
   (boolean
    (let [[epoch1 v1-upstream v1-debian] (parse-version v1)
-         [epoch2 v2-upstream v2-debian] (parse-version v2)
-         less? (compare-version v1-upstream v2-upstream)]
+         [epoch2 v2-upstream v2-debian] (parse-version v2)]
 
      ;; epochs take precedence
      (if (= epoch1 epoch2)
-       (if (not (or less? (compare-version v2-upstream v1-upstream)))
-         (or
-          ;; absence of debian revision is lower
-          (and v2-debian (not v1-debian))
-          (compare-version v1-debian v2-debian))
-         less?)
+       (let [less? (compare-version v1-upstream v2-upstream)]
+         (if (not (or less? (compare-version v2-upstream v1-upstream)))
+           (or
+             ;; absence of debian revision is lower
+             (and v2-debian (not v1-debian))
+             (compare-version v1-debian v2-debian))
+           less?))
        (when (and epoch1 epoch2)
          (< (Integer/parseInt epoch1) (Integer/parseInt epoch2)))))))
 
@@ -133,13 +133,12 @@
     " ")
    #" "))
 
-
 (defn- compare-to-range-deb
   [version operator range]
   (boolean
    (cond
      (= "=" operator)
-     (= version range)
+     (= (parse-version version) (parse-version range))
 
      (= "<" operator)
      (compare-versions version range)
@@ -148,11 +147,11 @@
      (compare-versions range version)
 
      (= "<=" operator)
-     (or (= version range)
+     (or (= (parse-version version) (parse-version range))
          (compare-versions version range))
 
      (= ">=" operator)
-     (or (= version range)
+     (or (= (parse-version version) (parse-version range))
          (compare-versions range version)))))
 
 (defn in-range?
