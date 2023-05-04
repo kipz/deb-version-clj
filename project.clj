@@ -1,4 +1,4 @@
-(defproject org.kipz/deb-version-clj "0.0.4"
+(defproject org.kipz/deb-version-clj "0.0.5-SNAPSHOT"
   :description "Parse and compare debian package versions in clojure"
   :url "https://github.com/kipz/deb-version-clj"
   :license {:name "Eclipse Public License"
